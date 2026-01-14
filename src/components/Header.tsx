@@ -68,7 +68,7 @@ const Header = memo(function Header() {
                 <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-lg sm:text-xl font-bold gradient-text tracking-tight">CUSKATECH</h1>
+                <h1 className="text-lg sm:text-xl font-bold gradient-text tracking-tight">DTE ADMIN</h1>
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-medium text-slate-400">DTE Admin</span>
                   <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
@@ -188,7 +188,7 @@ const Header = memo(function Header() {
                   <div className="absolute top-full right-0 mt-2 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden z-50">
                     <div className="p-3 border-b border-slate-700">
                       <p className="text-sm font-semibold text-slate-200">{username || 'Administrador'}</p>
-                      <p className="text-xs text-slate-400">admin@cuskatech.com</p>
+                      <p className="text-xs text-slate-400">{username || 'admin'}@example.com</p>
                     </div>
                     <div className="py-2">
                       <button

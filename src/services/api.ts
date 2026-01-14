@@ -1,13 +1,13 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.DEV ? '/admin' : '/admin',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/admin',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
   // Optimizaciones de rendimiento
-  timeout: 60000, // 60 segundos timeout (aumentado para conexiones móviles lentas)
+  timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 60000, // 60 segundos timeout (aumentado para conexiones móviles lentas)
 })
 
 // Cache simple para respuestas GET (solo para datos que no cambian frecuentemente)

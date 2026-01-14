@@ -36,7 +36,7 @@ export default function Login() {
           <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg">
             <div className="w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-sm" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold gradient-text mb-2">CUSKATECH</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold gradient-text mb-2">DTE ADMIN</h1>
           <p className="text-sm sm:text-base text-slate-400">DTE Admin Interface</p>
         </div>
 

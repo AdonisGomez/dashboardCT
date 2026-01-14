@@ -1,24 +1,27 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-  server: {
-    port: 5173,
-    proxy: {
-      '/admin': {
-        target: 'http://localhost:8003',
-        changeOrigin: true,
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  
+  return {
+    plugins: [react()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
       },
     },
-  },
+    server: {
+      port: Number(env.VITE_PORT) || 5173,
+      proxy: {
+        '/admin': {
+          target: env.VITE_API_URL || 'http://localhost:8003',
+          changeOrigin: true,
+        },
+      },
+    },
   build: {
     outDir: '../static/frontend',
     emptyOutDir: true,
@@ -45,9 +48,10 @@ export default defineConfig({
     // Chunk size warning limit
     chunkSizeWarningLimit: 1000,
   },
-  // Optimizaciones de desarrollo
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'axios', 'zustand'],
-  },
+    // Optimizaciones de desarrollo
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react-router-dom', 'axios', 'zustand'],
+    },
+  }
 })
 

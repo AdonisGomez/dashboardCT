@@ -1,7 +1,9 @@
 #!/bin/bash
 # Script wrapper para iniciar el frontend desde systemd
+# Ajusta la ruta según tu instalación
 
-cd /home/jarvis/fesv/fesv/admin-interface/frontend
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 # Cargar NVM
 export NVM_DIR="$HOME/.nvm"
