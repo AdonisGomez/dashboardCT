@@ -5,6 +5,8 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  // Optimización: solo generar clases usadas
+  safelist: [],
   theme: {
     extend: {
       colors: {
@@ -17,15 +19,18 @@ export default {
           text2: '#cbd5e1',
         },
       },
+      // Animaciones ultra-rápidas
       animation: {
-        'fade-in': 'fadeIn 0.2s ease-in',
-        'slide-up': 'slideUp 0.25s ease-out',
-        'slide-in': 'slideIn 0.25s ease-out',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in': 'fadeIn 0.1s ease-out',
+        'slide-up': 'slideUp 0.15s ease-out',
+        'slide-in': 'slideIn 0.12s ease-out',
+        'pulse-slow': 'pulse 2s ease-in-out infinite',
+        'spin-fast': 'spin 0.6s linear infinite',
       },
+      // Transiciones más rápidas
       transitionDuration: {
-        'fast': '150ms',
-        'normal': '200ms',
+        'fast': '80ms',
+        'normal': '120ms',
       },
       keyframes: {
         fadeIn: {
@@ -33,16 +38,32 @@ export default {
           'to': { opacity: '1' },
         },
         slideUp: {
-          'from': { opacity: '0', transform: 'translateY(10px)' },
+          'from': { opacity: '0', transform: 'translateY(6px)' },
           'to': { opacity: '1', transform: 'translateY(0)' },
         },
         slideIn: {
-          'from': { opacity: '0', transform: 'translateY(8px)' },
+          'from': { opacity: '0', transform: 'translateY(4px)' },
           'to': { opacity: '1', transform: 'translateY(0)' },
         },
+      },
+      // Spacing optimizado para touch
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
+      },
+      // Touch-friendly minimum sizes
+      minHeight: {
+        'touch': '44px',
+      },
+      minWidth: {
+        'touch': '44px',
       },
     },
   },
   plugins: [],
+  // Optimización de producción
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
 }
 

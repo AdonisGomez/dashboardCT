@@ -356,77 +356,67 @@
   }
 }
 
-/* GPU acceleration para elementos animados */
+/* GPU acceleration selectivo (solo donde es necesario) */
 .card,
 .btn-primary,
-.btn-secondary,
-[class*="animate-"] {
-  will-change: transform, opacity;
+.btn-secondary {
   transform: translateZ(0);
   backface-visibility: hidden;
 }
 
-/* Optimización de fuentes */
-@font-face {
-  font-display: swap;
+/* will-change solo durante interacción */
+.card:hover,
+.btn-primary:hover,
+.btn-secondary:hover {
+  will-change: transform;
 }
 
-/* Faster animations for perceived performance */
+/* Faster animations - ultra rápidas para sensación snappy */
 .animate-fade-in {
-  animation-duration: 0.15s !important;
+  animation: fadeIn 0.1s ease-out !important;
 }
 
 .animate-slide-up {
-  animation-duration: 0.2s !important;
+  animation: slideUp 0.15s ease-out !important;
 }
 
-/* Instant transitions for snappy feel */
+/* Transiciones instantáneas */
 .transition-instant {
-  transition-duration: 0.1s !important;
+  transition-duration: 80ms !important;
 }
 
-/* Content visibility para listas largas */
+/* Content visibility para listas largas - CRITICAL para rendimiento */
 .virtualize > * {
   content-visibility: auto;
-  contain-intrinsic-size: 0 80px;
+  contain-intrinsic-size: 0 60px;
 }
 
-/* Optimización de scrolling */
-.scroll-smooth {
-  scroll-behavior: smooth;
+/* Lazy cards para listas grandes */
+.lazy-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 120px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
-}
-
-/* Skeleton animation optimizada */
+/* Skeleton animation ultra-light */
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.5; }
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--bg-tertiary) 25%,
-    var(--bg-secondary) 50%,
-    var(--bg-tertiary) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.2s ease-in-out infinite;
+  background: var(--bg-tertiary);
+  animation: shimmer 1s ease-in-out infinite;
 }
 
-/* Lazy loading images */
+/* Images optimizadas */
+img {
+  content-visibility: auto;
+}
+
 img[loading="lazy"] {
   opacity: 0;
-  transition: opacity 0.2s ease-in;
+  transition: opacity 0.15s ease-in;
 }
 
 img[loading="lazy"].loaded,
@@ -434,17 +424,66 @@ img[loading="lazy"]:not([src=""]) {
   opacity: 1;
 }
 
-/* Faster hover states */
+/* Hover states ultra-rápidos */
 @media (hover: hover) {
   .card:hover,
   button:hover,
   a:hover {
-    transition-duration: 0.1s;
+    transition-duration: 80ms;
   }
 }
 
 /* Optimize paint for fixed elements */
 .fixed,
-[class*="sticky"] {
+[class*="sticky"],
+header,
+nav {
+  contain: layout style paint;
+}
+
+/* Optimize scrolling containers */
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Fast touch response */
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+/* Reduce layout thrashing */
+.no-layout-shift {
+  contain: layout;
+}
+
+/* Mobile-first font rendering */
+body {
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent FOIT */
+@font-face {
+  font-display: swap;
+}
+
+/* Optimize tables */
+table {
+  contain: layout;
+}
+
+/* Fast modals */
+.modal-overlay {
+  contain: strict;
+}
+
+/* Critical: Fast first paint */
+#root {
   contain: layout style;
 }

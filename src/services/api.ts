@@ -5,8 +5,11 @@ const api = axios.create({
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
-  timeout: 30000, // 30 segundos
+  timeout: 15000, // 15 segundos - más agresivo
+  // Compresión automática
+  decompress: true,
 })
 
 // ==================== CACHE SYSTEM ====================
@@ -17,8 +20,8 @@ interface CacheEntry {
 }
 
 const cache = new Map<string, CacheEntry>()
-const CACHE_TTL = 10000 // 10 segundos para datos estáticos
-const FAST_CACHE_TTL = 3000 // 3 segundos para datos dinámicos
+const CACHE_TTL = 30000 // 30 segundos para datos estáticos (más agresivo)
+const FAST_CACHE_TTL = 5000 // 5 segundos para datos dinámicos
 
 // Endpoints que NO deben cachearse
 const NO_CACHE_ENDPOINTS = [

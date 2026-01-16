@@ -42,7 +42,9 @@ const Header = memo(function Header() {
       }
     }
     loadNotifications()
-    const interval = setInterval(loadNotifications, 30000)
+    // Reducir frecuencia de polling en móvil
+    const isMobile = window.innerWidth < 768
+    const interval = setInterval(loadNotifications, isMobile ? 60000 : 30000)
     return () => clearInterval(interval)
   }, [])
 

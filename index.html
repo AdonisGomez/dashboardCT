@@ -2,12 +2,48 @@
 <html lang="es" class="dark">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    
+    <!-- Performance hints -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="color-scheme" content="dark light" />
+    
+    <!-- PWA / Mobile optimization -->
+    <meta name="theme-color" content="#020617" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- Preconnect to API -->
+    <link rel="preconnect" href="/admin" />
+    <link rel="dns-prefetch" href="/admin" />
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DTE Admin Dashboard</title>
+    <link rel="apple-touch-icon" href="/vite.svg" />
+    
+    <title>DTE Admin</title>
+    
+    <!-- Critical CSS inline for faster FCP -->
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      html{-webkit-text-size-adjust:100%;font-family:system-ui,-apple-system,sans-serif}
+      body{background:#020617;color:#f1f5f9;min-height:100vh;min-height:100dvh}
+      .light body{background:#f8fafc;color:#0f172a}
+      #root{min-height:100vh;min-height:100dvh}
+      @keyframes spin{to{transform:rotate(360deg)}}
+      .init-loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#020617}
+      .init-spinner{width:32px;height:32px;border:3px solid #334155;border-top-color:#0ea5e9;border-radius:50%;animation:spin .6s linear infinite}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Initial loader (removed by React) -->
+    <div id="root">
+      <div class="init-loader">
+        <div class="init-spinner"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

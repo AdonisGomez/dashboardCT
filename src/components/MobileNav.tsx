@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo, useCallback } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { 
   X, 
@@ -39,9 +39,12 @@ const bottomNavItems = [
   { to: '/alertas', icon: Bell, label: 'Alertas' },
 ]
 
-export default function MobileNav() {
+const MobileNav = memo(function MobileNav() {
   const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
+
+  const closeMenu = useCallback(() => setIsOpen(false), [])
+  const openMenu = useCallback(() => setIsOpen(true), [])
 
   // Cerrar el menú cuando cambia la ruta
   useEffect(() => {
@@ -94,7 +97,7 @@ export default function MobileNav() {
           
           {/* Botón Más */}
           <button
-            onClick={() => setIsOpen(true)}
+            onClick={openMenu}
             className="flex flex-col items-center py-2 px-3 min-w-[60px]"
           >
             <div className="p-1.5">
@@ -105,17 +108,17 @@ export default function MobileNav() {
         </div>
       </nav>
 
-      {/* Overlay */}
+      {/* Overlay - optimizado */}
       <div
-        className={`fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md transition-opacity duration-300 lg:hidden ${
+        className={`fixed inset-0 z-50 bg-slate-950/90 transition-opacity duration-150 lg:hidden ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
-        onClick={() => setIsOpen(false)}
+        onClick={closeMenu}
       />
 
-      {/* Drawer desde abajo */}
+      {/* Drawer desde abajo - animación más rápida */}
       <div
-        className={`fixed inset-x-0 bottom-0 z-50 max-h-[85vh] bg-slate-900 rounded-t-3xl border-t border-slate-800/50 shadow-2xl transition-transform duration-300 ease-out lg:hidden ${
+        className={`fixed inset-x-0 bottom-0 z-50 max-h-[85vh] bg-slate-900 rounded-t-3xl border-t border-slate-800/50 shadow-2xl transition-transform duration-200 ease-out lg:hidden ${
           isOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
@@ -131,7 +134,7 @@ export default function MobileNav() {
             <p className="text-xs text-slate-500">Todas las secciones</p>
           </div>
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={closeMenu}
             className="p-2.5 bg-slate-800/60 hover:bg-slate-800 rounded-xl transition-colors"
             aria-label="Cerrar menú"
           >
@@ -181,4 +184,6 @@ export default function MobileNav() {
       </div>
     </>
   )
-}
+})
+
+export default MobileNav
