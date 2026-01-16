@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Filter, Globe, Server, Beaker, Network, Power, ArrowRight, CheckCircle, XCircle, Cloud } from 'lucide-react'
+import { Plus, Filter, Globe, Server, Beaker, Network, Power, ArrowUpRight, CheckCircle, XCircle, Cloud, Lock } from 'lucide-react'
 import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
 
 export default function Clientes() {
+  const { canWrite, role } = useAuthStore()
+  const isViewer = role === 'viewer'
   const [clientes, setClientes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState('todos')
   const [totales, setTotales] = useState({ todos: 0, produccion: 0, pruebas: 0 })
+  const [accessDeniedModal, setAccessDeniedModal] = useState(false)
 
   useEffect(() => {
     loadClientes()
@@ -15,15 +19,21 @@ export default function Clientes() {
 
   const loadClientes = async () => {
     try {
-      const response = await api.get(`/clientes/api?ambiente=${filtro}`)
-      setClientes(response.data.clientes || [])
-      // Calcular totales
-      const todos = response.data.clientes || []
+      const responseTodos = await api.get('/clientes/api?ambiente=todos')
+      const todosClientes = responseTodos.data.clientes || []
+      
       setTotales({
-        todos: todos.length,
-        produccion: todos.filter((c: any) => c.ambiente === 'produccion').length,
-        pruebas: todos.filter((c: any) => c.ambiente === 'pruebas').length,
+        todos: todosClientes.length,
+        produccion: todosClientes.filter((c: any) => c.ambiente === 'produccion').length,
+        pruebas: todosClientes.filter((c: any) => c.ambiente === 'pruebas').length,
       })
+      
+      if (filtro === 'todos') {
+        setClientes(todosClientes)
+      } else {
+        const clientesFiltrados = todosClientes.filter((c: any) => c.ambiente === filtro)
+        setClientes(clientesFiltrados)
+      }
     } catch (error) {
       console.error('Error loading clientes:', error)
     } finally {
@@ -33,244 +43,200 @@ export default function Clientes() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-slate-400 text-lg">Cargando clientes...</div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 border-2 border-slate-700 border-t-slate-400 rounded-full animate-spin mb-4"></div>
+          <p className="text-slate-500 text-sm">Cargando clientes...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 md:space-y-6 animate-fade-in px-1 sm:px-0">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 md:mb-6">
-        <div className="mb-2 sm:mb-0 w-full sm:w-auto">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-100 mb-1 sm:mb-2 gradient-text">Clientes</h1>
-          <p className="text-[11px] sm:text-xs md:text-sm text-slate-400 flex items-center">
-            <Server className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-            <span className="truncate">Gestión completa de clientes del sistema</span>
-          </p>
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Clientes</h1>
+          <p className="text-sm text-slate-500 mt-1">Gestión de clientes del sistema de facturación</p>
         </div>
-        <Link
-          to="/clientes/nuevo"
-          className="w-full sm:w-auto mt-2 sm:mt-0 inline-flex items-center justify-center px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-95"
-        >
-          <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
-          <span className="hidden sm:inline">Agregar Cliente</span>
-          <span className="sm:hidden">Agregar</span>
-        </Link>
+        {canWrite() ? (
+          <Link
+            to="/clientes/nuevo"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-sky-600/20"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nuevo Cliente</span>
+          </Link>
+        ) : (
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-800/50 text-slate-500 text-sm font-medium rounded-xl border border-slate-700/50 cursor-not-allowed">
+            <Lock className="w-4 h-4" />
+            <span>Solo Lectura</span>
+          </div>
+        )}
       </div>
 
-      {/* Filtros de Ambiente */}
-      <div className="card rounded-lg sm:rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-5 border border-slate-700/50">
-        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-2.5 md:gap-3">
-          <span className="text-[11px] sm:text-xs md:text-sm font-semibold text-slate-300 flex items-center mb-1 sm:mb-0 sm:w-auto">
-            <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-            <span className="hidden sm:inline">Filtrar por ambiente:</span>
-            <span className="sm:hidden">Filtrar:</span>
-          </span>
-          <div className="flex flex-wrap gap-2 sm:gap-2.5 md:gap-3">
-            <button
-              onClick={() => setFiltro('todos')}
-              className={`flex-1 sm:flex-none px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm font-medium transition-all active:scale-95 flex items-center justify-center ${
-                filtro === 'todos'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
-                  : 'bg-slate-800 text-slate-300 active:bg-slate-700 border border-slate-700'
-              }`}
-            >
-              <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-              <span>Todos</span>
-              <span className="ml-1.5 sm:ml-2">({totales.todos})</span>
-            </button>
-            <button
-              onClick={() => setFiltro('produccion')}
-              className={`flex-1 sm:flex-none px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm font-medium transition-all active:scale-95 flex items-center justify-center ${
-                filtro === 'produccion'
-                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg shadow-emerald-500/30'
-                  : 'bg-slate-800 text-slate-300 active:bg-slate-700 border border-slate-700'
-              }`}
-            >
-              <Server className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-              <span className="hidden sm:inline">Producción</span>
-              <span className="sm:hidden">Prod</span>
-              <span className="ml-1.5 sm:ml-2">({totales.produccion})</span>
-            </button>
-            <button
-              onClick={() => setFiltro('pruebas')}
-              className={`flex-1 sm:flex-none px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs md:text-sm font-medium transition-all active:scale-95 flex items-center justify-center ${
-                filtro === 'pruebas'
-                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/30'
-                  : 'bg-slate-800 text-slate-300 active:bg-slate-700 border border-slate-700'
-              }`}
-            >
-              <Beaker className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-              <span className="hidden sm:inline">Pruebas</span>
-              <span className="sm:hidden">Test</span>
-              <span className="ml-1.5 sm:ml-2">({totales.pruebas})</span>
-            </button>
-          </div>
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 mr-2">
+          <Filter className="w-4 h-4 text-slate-500" />
+          <span className="text-sm text-slate-400">Ambiente:</span>
         </div>
+        {[
+          { key: 'todos', label: 'Todos', icon: Globe, count: totales.todos },
+          { key: 'produccion', label: 'Producción', icon: Server, count: totales.produccion },
+          { key: 'pruebas', label: 'Pruebas', icon: Beaker, count: totales.pruebas },
+        ].map(({ key, label, icon: Icon, count }) => (
+          <button
+            key={key}
+            onClick={() => setFiltro(key)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              filtro === key
+                ? 'bg-slate-700/60 text-slate-100 border border-slate-600'
+                : 'bg-slate-800/40 text-slate-400 border border-slate-700/40 hover:bg-slate-800/60 hover:text-slate-300'
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            <span className="hidden sm:inline">{label}</span>
+            <span className="px-1.5 py-0.5 rounded-md bg-slate-900/60 text-xs">{count}</span>
+          </button>
+        ))}
       </div>
 
       {/* Grid de Clientes */}
       {clientes.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {clientes.map((cliente, index) => (
-            <Link
+            <div
               key={cliente.nit}
-              to={`/clientes/${cliente.nit}?ambiente=${cliente.ambiente || filtro}`}
-              className="group card rounded-lg sm:rounded-xl md:rounded-2xl p-3.5 sm:p-4 md:p-5 border border-slate-700/50 active:border-blue-500/50 sm:hover:border-blue-500/50 transition-all active:scale-[0.98] sm:hover:scale-[1.02] sm:hover:shadow-xl sm:hover:shadow-blue-500/20"
-              style={{
-                animation: `fadeIn 0.5s ease ${index * 0.1}s both`,
+              onClick={() => {
+                if (isViewer) {
+                  setAccessDeniedModal(true)
+                } else {
+                  window.location.href = `/clientes/${cliente.nit}?ambiente=${cliente.ambiente || filtro}`
+                }
               }}
+              className="group bg-slate-800/40 backdrop-blur-sm rounded-2xl p-5 border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
+              style={{ animation: `fadeIn 0.3s ease ${index * 0.05}s both` }}
             >
-              {/* Header del Card - Nombre Completo */}
-              <div className="mb-3 sm:mb-4">
-                <div className="flex items-start justify-between mb-2 gap-2">
-                  <div className="flex-1 min-w-0 pr-2">
-                    <h3 
-                      className="text-sm sm:text-base md:text-lg font-bold text-slate-100 group-active:text-blue-400 sm:group-hover:text-blue-400 transition-colors mb-1 sm:mb-1.5 leading-snug sm:leading-tight break-words"
-                      title={cliente.nombre_comercial || cliente.nombre || 'Sin nombre'}
-                    >
-                      {cliente.nombre_comercial || cliente.nombre || 'Sin nombre'}
-                    </h3>
-                    {cliente.nombre && cliente.nombre !== cliente.nombre_comercial && (
-                      <p className="text-[10px] sm:text-xs text-slate-500 mb-1 sm:mb-1.5 line-clamp-1" title={cliente.nombre}>
-                        {cliente.nombre}
-                      </p>
-                    )}
-                    <p className="text-[9px] sm:text-[10px] md:text-xs text-slate-400 font-mono break-all" title={cliente.nit}>
-                      NIT: {cliente.nit}
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-semibold text-slate-100 truncate group-hover:text-sky-400 transition-colors">
+                    {cliente.nombre_comercial || cliente.nombre || 'Sin nombre'}
+                  </h3>
+                  {!isViewer ? (
+                    <p className="text-xs text-slate-500 font-mono mt-1">NIT: {cliente.nit}</p>
+                  ) : (
+                    <p className="text-xs text-slate-600 mt-1 flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Información restringida
                     </p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <span
-                      className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-semibold ${
-                        cliente.ambiente === 'produccion'
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : cliente.ambiente === 'pruebas'
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                          : 'bg-slate-700 text-slate-400 border border-slate-600'
-                      }`}
-                    >
-                      {cliente.ambiente === 'produccion' ? (
-                        <Server className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-1.5" />
-                      ) : (
-                        <Beaker className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-1.5" />
-                      )}
-                      <span className="hidden sm:inline">{cliente.ambiente === 'produccion' ? 'PROD' : 'TEST'}</span>
-                      <span className="sm:hidden">{cliente.ambiente === 'produccion' ? 'P' : 'T'}</span>
-                    </span>
-                  </div>
+                  )}
                 </div>
+                <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${
+                  cliente.ambiente === 'produccion'
+                    ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
+                    : 'bg-slate-700/50 text-slate-400 border border-slate-600/50'
+                }`}>
+                  {cliente.ambiente === 'produccion' ? <Server className="w-3 h-3" /> : <Beaker className="w-3 h-3" />}
+                  {cliente.ambiente === 'produccion' ? 'Prod' : 'Test'}
+                </span>
               </div>
 
-              {/* Estado General */}
-              <div className="mb-3 sm:mb-4">
-                <div className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 sm:py-2 bg-slate-800/60 rounded-md sm:rounded-lg border border-slate-700/50">
-                  <div className="flex items-center text-[10px] sm:text-xs text-slate-400">
-                    <Power className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1.5 sm:mr-2 flex-shrink-0" />
-                    <span className="hidden sm:inline">Estado General</span>
-                    <span className="sm:hidden">Estado</span>
-                  </div>
-                  <span
-                    className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-semibold ${
-                      cliente.estado === 'activo'
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                    }`}
-                  >
-                    {cliente.estado === 'activo' ? (
-                      <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
-                    ) : (
-                      <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
-                    )}
-                    <span className="hidden sm:inline">{cliente.estado?.toUpperCase() || 'INACTIVO'}</span>
-                    <span className="sm:hidden">{cliente.estado === 'activo' ? 'OK' : 'OFF'}</span>
-                  </span>
-                </div>
+              {/* Estado */}
+              <div className="flex items-center justify-between p-3 bg-slate-900/40 rounded-xl mb-4">
+                <span className="text-xs text-slate-500">Estado</span>
+                <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+                  cliente.estado === 'activo' ? 'text-emerald-400' : 'text-red-400'
+                }`}>
+                  {cliente.estado === 'activo' ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                  {cliente.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                </span>
               </div>
 
-              {/* Información Técnica */}
-              <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-                <div className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 sm:py-2 bg-slate-800/40 rounded-md sm:rounded-lg">
-                  <div className="flex items-center text-[10px] sm:text-xs text-slate-400">
-                    <Network className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1.5 sm:mr-2 flex-shrink-0" />
-                    <span>API</span>
-                  </div>
-                  <div className="flex items-center space-x-1.5 sm:space-x-2">
-                    <span className="text-[10px] sm:text-xs font-mono font-semibold text-slate-200">
-                      :{cliente.api_port || 'N/A'}
-                    </span>
-                    {cliente.contenedores?.api === 'running' ? (
-                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse flex-shrink-0" title="API Activo"></span>
-                    ) : (
-                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-400 rounded-full flex-shrink-0" title="API Detenido"></span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 sm:py-2 bg-slate-800/40 rounded-md sm:rounded-lg">
-                  <div className="flex items-center text-[10px] sm:text-xs text-slate-400">
-                    <Power className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1.5 sm:mr-2 flex-shrink-0" />
-                    <span>Firmador</span>
-                  </div>
-                  <div className="flex items-center space-x-1.5 sm:space-x-2">
-                    <span className="text-[10px] sm:text-xs font-mono font-semibold text-slate-200">
-                      :{cliente.firmador_port || 'N/A'}
-                    </span>
-                    {cliente.contenedores?.firmador === 'running' ? (
-                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse flex-shrink-0" title="Firmador Activo"></span>
-                    ) : (
-                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-400 rounded-full flex-shrink-0" title="Firmador Detenido"></span>
-                    )}
-                  </div>
-                </div>
-                {cliente.contenedores && (
-                  <div className="flex items-center justify-between px-2.5 sm:px-3 py-1.5 sm:py-2 bg-slate-800/40 rounded-md sm:rounded-lg">
-                    <div className="flex items-center text-[10px] sm:text-xs text-slate-400">
-                      <Cloud className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1.5 sm:mr-2 flex-shrink-0" />
-                      <span>Túnel</span>
+              {/* Info técnica */}
+              {!isViewer ? (
+                <div className="space-y-2 mb-4">
+                  {[
+                    { icon: Network, label: 'API', value: `:${cliente.api_port || 'N/A'}`, status: cliente.contenedores?.api === 'running' },
+                    { icon: Power, label: 'Firmador', value: `:${cliente.firmador_port || 'N/A'}`, status: cliente.contenedores?.firmador === 'running' },
+                  ].map(({ icon: Icon, label, value, status }) => (
+                    <div key={label} className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-2 text-slate-500">
+                        <Icon className="w-3.5 h-3.5" /> {label}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-slate-300">{value}</span>
+                        <span className={`w-1.5 h-1.5 rounded-full ${status ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      {cliente.contenedores.cloudflared === 'running' ? (
-                        <>
-                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse mr-1.5 sm:mr-2 flex-shrink-0" title="Cloudflare Activo"></span>
-                          <span className="text-[10px] sm:text-xs text-emerald-400 font-semibold">Activo</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-400 rounded-full mr-1.5 sm:mr-2 flex-shrink-0" title="Cloudflare Detenido"></span>
-                          <span className="text-[10px] sm:text-xs text-red-400 font-semibold">Inactivo</span>
-                        </>
-                      )}
+                  ))}
+                  {cliente.contenedores?.cloudflared && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-2 text-slate-500">
+                        <Cloud className="w-3.5 h-3.5" /> Túnel
+                      </span>
+                      <span className={`font-medium ${cliente.contenedores.cloudflared === 'running' ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {cliente.contenedores.cloudflared === 'running' ? 'Activo' : 'Inactivo'}
+                      </span>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 bg-slate-900/40 rounded-xl mb-4">
+                  <p className="text-xs text-slate-600 flex items-center gap-2">
+                    <Lock className="w-3 h-3" /> Información técnica restringida
+                  </p>
+                </div>
+              )}
 
-              {/* Footer del Card */}
-              <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-slate-700/50">
-                <span className="text-[10px] sm:text-xs text-slate-500 font-medium">Ver detalles</span>
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-active:text-blue-400 sm:group-hover:text-blue-400 group-active:translate-x-0.5 sm:group-hover:translate-x-1 transition-all" />
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-3 border-t border-slate-700/30">
+                <span className="text-xs text-slate-500">
+                  {isViewer ? 'Acceso restringido' : 'Ver detalles'}
+                </span>
+                <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors" />
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       ) : (
-        /* Estado Vacío */
-        <div className="card rounded-2xl p-16 border border-slate-700/50 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Server className="w-12 h-12 text-slate-600" />
-            </div>
-            <h3 className="text-2xl font-bold text-slate-200 mb-3">No hay clientes registrados</h3>
-            <p className="text-slate-400 mb-6">Comienza agregando tu primer cliente al sistema</p>
+        <div className="bg-slate-800/40 rounded-2xl p-12 border border-slate-700/30 text-center">
+          <div className="w-16 h-16 bg-slate-700/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Server className="w-8 h-8 text-slate-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-200 mb-2">Sin clientes</h3>
+          <p className="text-sm text-slate-500 mb-6">No hay clientes registrados en el sistema</p>
+          {canWrite() && (
             <Link
               to="/clientes/nuevo"
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transform hover:scale-105"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium rounded-xl transition-all"
             >
-              <Plus className="w-5 h-5 mr-2" />
-              Agregar Primer Cliente
+              <Plus className="w-4 h-4" />
+              Agregar Cliente
             </Link>
+          )}
+        </div>
+      )}
+
+      {/* Modal Acceso Denegado */}
+      {accessDeniedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setAccessDeniedModal(false)} />
+          <div className="relative w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl p-6 text-center">
+            <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-7 h-7 text-slate-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-100 mb-2">Acceso Restringido</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              Tu usuario tiene permisos de solo lectura. No puedes acceder a los detalles de los clientes.
+            </p>
+            <button
+              onClick={() => setAccessDeniedModal(false)}
+              className="w-full px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium rounded-xl transition-all"
+            >
+              Entendido
+            </button>
           </div>
         </div>
       )}

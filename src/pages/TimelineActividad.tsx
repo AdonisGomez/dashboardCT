@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Clock, Activity, RefreshCw, Filter, CheckCircle, XCircle, AlertTriangle, Server, FileText, Globe, Zap } from 'lucide-react'
 import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
+import RestrictedAccess from '../components/RestrictedAccess'
 
 interface Actividad {
   tipo: string
@@ -19,6 +21,13 @@ interface Actividad {
 }
 
 export default function TimelineActividad() {
+  const { role } = useAuthStore()
+  
+  // Bloquear acceso a viewers
+  if (role === 'viewer') {
+    return <RestrictedAccess title="Timeline - Acceso Bloqueado" message="El timeline de actividad contiene información de operaciones del sistema. Solo los administradores pueden acceder a esta sección." />
+  }
+  
   const [actividades, setActividades] = useState<Actividad[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroTipo, setFiltroTipo] = useState<string>('')

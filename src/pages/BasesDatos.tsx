@@ -16,6 +16,8 @@ import {
   FileText,
 } from 'lucide-react'
 import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
+import RestrictedAccess from '../components/RestrictedAccess'
 
 interface MiembroReplicaSet {
   id: number
@@ -108,6 +110,13 @@ interface Backup {
 type TabType = 'estado' | 'metricas' | 'backups' | 'consultas'
 
 export default function BasesDatos() {
+  const { role } = useAuthStore()
+  
+  // Bloquear acceso a viewers
+  if (role === 'viewer') {
+    return <RestrictedAccess title="Base de Datos - Acceso Bloqueado" message="La información de bases de datos contiene credenciales y datos sensibles. Solo los administradores pueden acceder a esta sección." />
+  }
+  
   const [estado, setEstado] = useState<EstadoMongoDB | null>(null)
   const [metricas, setMetricas] = useState<MetricasRendimiento | null>(null)
   const [backups, setBackups] = useState<Backup[]>([])
@@ -333,48 +342,36 @@ export default function BasesDatos() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-4 sm:mb-6 md:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold gradient-text mb-2 flex items-center">
-            <Database className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mr-1.5 sm:mr-2" />
-            <span className="text-lg sm:text-2xl md:text-3xl lg:text-4xl">Estado de Bases de Datos</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 flex items-center">
-            <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-            Monitoreo y sincronización de MongoDB
-          </p>
+          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Base de Datos</h1>
+          <p className="text-sm text-slate-500 mt-1">Monitoreo y sincronización de MongoDB</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
-          {/* Selector de Ambiente */}
-          <div className="w-full sm:w-auto">
-            <select
-              value={ambiente}
-              onChange={(e) => setAmbiente(e.target.value)}
-              className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="produccion">Producción</option>
-              <option value="pruebas">Pruebas</option>
-            </select>
-          </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={ambiente}
+            onChange={(e) => setAmbiente(e.target.value)}
+            className="px-4 py-2 bg-slate-900/60 border border-slate-700/50 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-slate-600"
+          >
+            <option value="produccion">Producción</option>
+            <option value="pruebas">Pruebas</option>
+          </select>
 
-          {/* Auto-refresh */}
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`w-full sm:w-auto inline-flex items-center justify-center px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               autoRefresh
-                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
+                : 'bg-slate-800/60 text-slate-400 border border-slate-700/50'
             }`}
           >
-            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{autoRefresh ? 'Auto-actualizar' : 'Manual'}</span>
-            <span className="sm:hidden">{autoRefresh ? 'Auto' : 'Manual'}</span>
+            <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
+            {autoRefresh ? 'Auto' : 'Manual'}
           </button>
 
-          {/* Botón Actualizar */}
           <button
             onClick={() => {
               loadEstado()
@@ -382,49 +379,47 @@ export default function BasesDatos() {
               if (tabActivo === 'backups') loadBackups()
             }}
             disabled={loading}
-            className="w-full sm:w-auto inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs sm:text-sm font-medium transition-all disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-medium transition-all disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-slate-700 overflow-x-auto">
-        <nav className="flex space-x-1 min-w-max">
-          {tabs.map((tab) => {
-            const Icon = tab.icon
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setTabActivo(tab.id)
-                  if (tab.id === 'metricas' && !metricas) loadMetricas()
-                  if (tab.id === 'backups' && backups.length === 0) loadBackups()
-                }}
-                className={`flex items-center px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  tabActivo === tab.id
-                    ? 'border-b-2 border-blue-500 text-blue-400'
-                    : 'text-slate-400 hover:text-slate-300 hover:border-b-2 hover:border-slate-600'
-                }`}
-              >
-                <Icon className="w-4 h-4 mr-2" />
-                {tab.label}
-              </button>
-            )
-          })}
-        </nav>
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setTabActivo(tab.id)
+                if (tab.id === 'metricas' && !metricas) loadMetricas()
+                if (tab.id === 'backups' && backups.length === 0) loadBackups()
+              }}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                tabActivo === tab.id
+                  ? 'bg-slate-700/60 text-slate-100 border border-slate-600'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Contenido de Tabs */}
       {tabActivo === 'estado' && (
         <>
           {/* Estado de Conexión */}
-          <div className="card rounded-xl p-4 sm:p-6 border border-slate-700/50">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-100 flex items-center">
-                <Database className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-blue-400" />
+          <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/30">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-semibold text-slate-200 flex items-center gap-2">
+                <Database className="w-5 h-5 text-slate-400" />
                 Estado de Conexión
               </h2>
               <div className="flex items-center space-x-2">

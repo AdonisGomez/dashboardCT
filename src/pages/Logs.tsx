@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { Terminal, Search, Filter, Download, Play, Square, RefreshCw, X } from 'lucide-react'
 import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
+import RestrictedAccess from '../components/RestrictedAccess'
 
 interface LogEntry {
   timestamp: string
@@ -11,9 +13,16 @@ interface LogEntry {
 }
 
 export default function Logs() {
+  const { role } = useAuthStore()
+  
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [streaming, setStreaming] = useState(false)
+  
+  // Bloquear acceso a viewers
+  if (role === 'viewer') {
+    return <RestrictedAccess title="Logs - Acceso Bloqueado" message="Los logs del sistema contienen información técnica sensible. Solo los administradores pueden acceder a esta sección." />
+  }
   const [filtroServicio, setFiltroServicio] = useState<string>('')
   const [filtroNivel, setFiltroNivel] = useState<string>('')
   const [filtroBusqueda, setFiltroBusqueda] = useState<string>('')
@@ -183,17 +192,12 @@ export default function Logs() {
   })
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6">
-        <div className="mb-3 sm:mb-0">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 mb-2 gradient-text">
-            Logs en Tiempo Real
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 flex items-center">
-            <Terminal className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-            Monitoreo de logs de todos los servicios
-          </p>
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Logs en Tiempo Real</h1>
+          <p className="text-sm text-slate-500 mt-1">Monitoreo de logs de todos los servicios</p>
         </div>
         <div className="flex items-center space-x-2">
           <button

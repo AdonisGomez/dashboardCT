@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { AlertTriangle, RefreshCw, Download, ChevronDown, ChevronRight, Clock, Server, User } from 'lucide-react'
 import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
+import RestrictedAccess from '../components/RestrictedAccess'
 
 interface ErrorInstance {
   timestamp: string
@@ -24,8 +26,15 @@ interface ErrorGroup {
 }
 
 export default function Errores() {
+  const { role } = useAuthStore()
+  
   const [errores, setErrores] = useState<ErrorGroup[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Bloquear acceso a viewers
+  if (role === 'viewer') {
+    return <RestrictedAccess title="Error Tracking - Acceso Bloqueado" message="El tracking de errores contiene información técnica sensible. Solo los administradores pueden acceder a esta sección." />
+  }
   const [filtroServicio, setFiltroServicio] = useState<string>('')
   const [horas, setHoras] = useState<number>(24)
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set())
@@ -127,17 +136,12 @@ export default function Errores() {
   const totalErrores = errores.reduce((sum, grupo) => sum + grupo.count, 0)
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6">
-        <div className="mb-3 sm:mb-0">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 mb-2 gradient-text">
-            Error Tracking
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 flex items-center">
-            <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-            Análisis y agrupación de errores del sistema
-          </p>
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Error Tracking</h1>
+          <p className="text-sm text-slate-500 mt-1">Análisis y agrupación de errores del sistema</p>
         </div>
         <div className="flex items-center space-x-2">
           <button

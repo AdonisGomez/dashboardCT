@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Key, RefreshCw, RotateCw, Eye, EyeOff, Copy, CheckCircle } from 'lucide-react'
 import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
+import RestrictedAccess from '../components/RestrictedAccess'
 
 interface ApiKey {
   nit: string
@@ -14,6 +16,12 @@ interface ApiKey {
 }
 
 export default function ApiKeys() {
+  const { role } = useAuthStore()
+  
+  // Bloquear acceso a viewers
+  if (role === 'viewer') {
+    return <RestrictedAccess title="API Keys - Acceso Bloqueado" message="Las API Keys contienen información sensible de autenticación. Solo los administradores pueden acceder a esta sección." />
+  }
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroAmbiente, setFiltroAmbiente] = useState<string>('todos')

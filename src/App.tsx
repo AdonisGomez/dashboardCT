@@ -1,10 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect, useState, Suspense, lazy } from 'react'
+import { useEffect, useState, Suspense, lazy, memo, useCallback } from 'react'
 import { useAuthStore } from './stores/authStore'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import { PageSkeleton } from './components/Skeleton'
 
-// Lazy loading de páginas para code splitting
+// Lazy loading de páginas con preload
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Clientes = lazy(() => import('./pages/Clientes'))
 const ClienteDetail = lazy(() => import('./pages/ClienteDetail'))
@@ -19,38 +20,51 @@ const ApiKeys = lazy(() => import('./pages/ApiKeys'))
 const SystemHealth = lazy(() => import('./pages/SystemHealth'))
 const TimelineActividad = lazy(() => import('./pages/TimelineActividad'))
 
-// Componente de carga optimizado
-const LoadingSpinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-    <div className="flex flex-col items-center space-y-4">
-      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-      <div className="text-slate-400 text-sm">Cargando...</div>
-    </div>
+// Preload de rutas críticas en background
+const preloadCriticalRoutes = () => {
+  // Preload después de 1 segundo de inactividad
+  setTimeout(() => {
+    import('./pages/Dashboard')
+    import('./pages/Clientes')
+    import('./pages/DTEList')
+  }, 1000)
+}
+
+// Loading skeleton ultraligero
+const QuickLoader = memo(() => (
+  <div className="p-4 sm:p-6">
+    <PageSkeleton />
   </div>
-)
+))
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+// Verificación de sesión inline (sin re-render)
+const PrivateRoute = memo(function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, checkAuth } = useAuthStore()
-  const [checking, setChecking] = useState(true)
+  const [status, setStatus] = useState<'checking' | 'done'>('checking')
 
-  useEffect(() => {
-    // Verificar sesión al cargar
-    const verifySession = async () => {
-      try {
-        await checkAuth()
-      } catch (error) {
-        console.error('Error verifying session:', error)
-      } finally {
-        setChecking(false)
-      }
+  const verify = useCallback(async () => {
+    try {
+      await checkAuth()
+    } catch {
+      // Silent fail
+    } finally {
+      setStatus('done')
     }
-    verifySession()
   }, [checkAuth])
 
-  if (checking) {
+  useEffect(() => {
+    verify()
+    // Preload rutas después de autenticación
+    preloadCriticalRoutes()
+  }, [verify])
+
+  if (status === 'checking') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="text-slate-400">Verificando sesión...</div>
+      <div className="min-h-screen flex items-center justify-center bg-theme-primary">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-slate-400 text-sm">Verificando...</span>
+        </div>
       </div>
     )
   }
@@ -60,131 +74,44 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>
-}
+})
+
+// Wrapper de ruta con Suspense optimizado
+const RouteWrapper = memo(({ component: Component }: { component: React.ComponentType }) => (
+  <Suspense fallback={<QuickLoader />}>
+    <Component />
+  </Suspense>
+))
 
 function App() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <Layout />
-            </PrivateRoute>
-          }
-        >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route 
-            path="dashboard" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <Dashboard />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="clientes" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <Clientes />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="clientes/nuevo" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <ClienteForm />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="clientes/:nit" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <ClienteDetail />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="dte" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <DTEList />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="alertas" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <Alertas />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="bases-datos" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <BasesDatos />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="logs" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <Logs />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="errores" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <Errores />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="api-analytics" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <ApiAnalytics />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="api-keys" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <ApiKeys />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="system-health" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <SystemHealth />
-              </Suspense>
-            } 
-          />
-          <Route 
-            path="timeline" 
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <TimelineActividad />
-              </Suspense>
-            } 
-          />
-        </Route>
-      </Routes>
-    </Suspense>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/"
+        element={
+          <PrivateRoute>
+            <Layout />
+          </PrivateRoute>
+        }
+      >
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<RouteWrapper component={Dashboard} />} />
+        <Route path="clientes" element={<RouteWrapper component={Clientes} />} />
+        <Route path="clientes/nuevo" element={<RouteWrapper component={ClienteForm} />} />
+        <Route path="clientes/:nit" element={<RouteWrapper component={ClienteDetail} />} />
+        <Route path="dte" element={<RouteWrapper component={DTEList} />} />
+        <Route path="alertas" element={<RouteWrapper component={Alertas} />} />
+        <Route path="bases-datos" element={<RouteWrapper component={BasesDatos} />} />
+        <Route path="logs" element={<RouteWrapper component={Logs} />} />
+        <Route path="errores" element={<RouteWrapper component={Errores} />} />
+        <Route path="api-analytics" element={<RouteWrapper component={ApiAnalytics} />} />
+        <Route path="api-keys" element={<RouteWrapper component={ApiKeys} />} />
+        <Route path="system-health" element={<RouteWrapper component={SystemHealth} />} />
+        <Route path="timeline" element={<RouteWrapper component={TimelineActividad} />} />
+      </Route>
+    </Routes>
   )
 }
 
 export default App
-

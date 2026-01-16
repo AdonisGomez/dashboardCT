@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Search, X, Clock, FileText, Users, Bell, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
 
 interface SearchResult {
   type: 'cliente' | 'dte' | 'alerta'
@@ -27,8 +28,11 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const [history, setHistory] = useState<SearchHistory[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [accessDeniedModal, setAccessDeniedModal] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
+  const { role } = useAuthStore()
+  const isViewer = role === 'viewer'
 
   // Cargar historial desde localStorage
   useEffect(() => {
@@ -119,6 +123,12 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
       handleSearch(query)
     }
 
+    // Bloquear acceso a clientes para viewer
+    if (result.type === 'cliente' && isViewer) {
+      setAccessDeniedModal(true)
+      return
+    }
+
     // Navegar según el tipo
     if (result.type === 'cliente') {
       navigate(`/clientes/${result.id}`)
@@ -155,17 +165,17 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 sm:pt-32 px-4">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-start justify-center pt-0 sm:pt-24 px-0 sm:px-4">
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/70 sm:bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal de búsqueda */}
-      <div className="relative w-full max-w-2xl bg-slate-800 rounded-xl border border-slate-700 shadow-2xl">
+      {/* Modal de búsqueda - Pantalla completa en móvil */}
+      <div className="relative w-full h-full sm:h-auto sm:max-h-[70vh] sm:max-w-2xl bg-slate-900 sm:bg-slate-800 sm:rounded-xl border-0 sm:border border-slate-700 shadow-2xl flex flex-col">
         {/* Input de búsqueda */}
-        <div className="flex items-center px-4 py-3 border-b border-slate-700">
+        <div className="flex items-center px-4 py-4 sm:py-3 border-b border-slate-700/50 safe-top">
           <Search className="w-5 h-5 text-slate-400 mr-3 flex-shrink-0" />
           <input
             ref={inputRef}
@@ -228,8 +238,13 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                     <div className="text-sm font-medium text-slate-100 truncate">
                       {result.title}
                     </div>
-                    <div className="text-xs text-slate-400 truncate">{result.subtitle}</div>
-                    {result.metadata && (
+                    {/* Ocultar NIT y datos sensibles para viewer */}
+                    {result.type === 'cliente' && isViewer ? (
+                      <div className="text-xs text-slate-500 italic truncate">🔒 Información restringida</div>
+                    ) : (
+                      <div className="text-xs text-slate-400 truncate">{result.subtitle}</div>
+                    )}
+                    {result.metadata && !isViewer && (
                       <div className="text-xs text-slate-500 mt-1">{result.metadata}</div>
                     )}
                   </div>
@@ -302,6 +317,29 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           </div>
         </div>
       </div>
+
+      {/* Modal de Acceso Denegado para Viewer */}
+      {accessDeniedModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setAccessDeniedModal(false)} />
+          <div className="relative w-full max-w-md bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl p-6 text-center">
+            <div className="w-16 h-16 bg-violet-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">🔒</span>
+            </div>
+            <h3 className="text-xl font-bold text-slate-100 mb-2">Acceso Restringido</h3>
+            <p className="text-slate-400 mb-6">
+              Tu usuario tiene permisos de <span className="text-violet-400 font-semibold">solo lectura</span>. 
+              No puedes acceder a los detalles de los clientes.
+            </p>
+            <button
+              onClick={() => setAccessDeniedModal(false)}
+              className="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium rounded-xl transition-all"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

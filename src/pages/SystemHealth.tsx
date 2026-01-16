@@ -2,8 +2,16 @@ import { useEffect, useState } from 'react'
 import { Activity, RefreshCw, Cpu, HardDrive, MemoryStick, Network, Server } from 'lucide-react'
 import { AreaChart, Area, ResponsiveContainer, Tooltip, Legend, XAxis, YAxis } from 'recharts'
 import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
+import RestrictedAccess from '../components/RestrictedAccess'
 
 export default function SystemHealth() {
+  const { role } = useAuthStore()
+  
+  // Bloquear acceso a viewers
+  if (role === 'viewer') {
+    return <RestrictedAccess title="System Health - Acceso Bloqueado" message="Las métricas del sistema contienen información sensible de infraestructura. Solo los administradores pueden acceder a esta sección." />
+  }
   const [metricas, setMetricas] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [historial, setHistorial] = useState<any[]>([])

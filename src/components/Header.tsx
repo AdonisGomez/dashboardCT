@@ -1,5 +1,5 @@
 import { useState, useEffect, memo } from 'react'
-import { Search, Server, Bell, User, Settings } from 'lucide-react'
+import { Search, Server, Bell, LogOut, Eye } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import api from '../services/api'
 import GlobalSearch from './GlobalSearch'
@@ -7,16 +7,15 @@ import NotificationSettings from './NotificationSettings'
 import { useNotifications } from '../hooks/useNotifications'
 
 const Header = memo(function Header() {
-  const { username, logout } = useAuthStore()
+  const { username, role, logout } = useAuthStore()
   const [searchOpen, setSearchOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
-  useNotifications() // Inicializar sistema de notificaciones
+  useNotifications()
 
-  // Atajo de teclado Ctrl+K para búsqueda
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -29,7 +28,6 @@ const Header = memo(function Header() {
   }, [])
 
   useEffect(() => {
-    // Cargar notificaciones
     const loadNotifications = async () => {
       try {
         const response = await api.get('/alertas/api', { timeout: 20000 })
@@ -38,7 +36,6 @@ const Header = memo(function Header() {
           setUnreadCount(unread)
         }
       } catch (error: any) {
-        // Solo loggear errores que no sean timeout
         if (error.code !== 'ECONNABORTED' && error.message !== 'timeout of 20000ms exceeded') {
           console.error('Error loading notifications:', error)
         }
@@ -54,154 +51,149 @@ const Header = memo(function Header() {
     window.location.href = '/login'
   }
 
+  // Cerrar menús al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setStatsOpen(false)
+      setNotificationsOpen(false)
+      setUserMenuOpen(false)
+    }
+    if (statsOpen || notificationsOpen || userMenuOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [statsOpen, notificationsOpen, userMenuOpen])
+
   return (
-    <header className="glass-effect border-b border-slate-700/50 shadow-2xl sticky top-0 z-50">
-      <div className="bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border-b border-blue-500/20">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-              <div className="relative group">
-                <div className="w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 transform group-hover:scale-110 transition-all duration-200">
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-sm" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
+    <header className="header-bg sticky top-0 z-50 safe-top">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-12 sm:h-14">
+          {/* Logo */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <div className="relative">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden bg-theme-card border border-theme-primary">
+                <img src="/static/logo.png" alt="Logo" className="w-full h-full object-contain p-0.5" />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg sm:text-xl font-bold gradient-text tracking-tight">DTE ADMIN</h1>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-medium text-slate-400">DTE Admin</span>
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                </div>
-              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-theme-secondary" />
             </div>
+            <div>
+              <h1 className="text-sm sm:text-base font-semibold text-theme-primary tracking-tight">DTE Admin</h1>
+              <p className="text-[10px] text-theme-muted hidden sm:block">Sistema de Facturación</p>
+            </div>
+          </div>
 
-            {/* Búsqueda - Móvil */}
-            <div className="flex-1 max-w-xs mx-2 sm:hidden">
+          {/* Búsqueda - Desktop */}
+          <div className="flex-1 max-w-md mx-4 hidden md:block">
+            <button
+              onClick={(e) => { e.stopPropagation(); setSearchOpen(true) }}
+              className="w-full flex items-center px-4 py-2 bg-slate-800/50 border border-slate-700/40 rounded-xl text-sm text-slate-400 hover:border-slate-600 transition-all"
+            >
+              <Search className="w-4 h-4 mr-3 text-slate-500" />
+              <span className="flex-1 text-left">Buscar clientes, DTE...</span>
+              <kbd className="hidden lg:inline-flex items-center px-2 py-0.5 text-xs text-slate-500 bg-slate-800 border border-slate-700 rounded">
+                ⌘K
+              </kbd>
+            </button>
+          </div>
+
+          {/* Búsqueda móvil */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setSearchOpen(true) }}
+            className="md:hidden p-2 rounded-xl bg-slate-800/50 border border-slate-700/40 active:scale-95 transition-all"
+          >
+            <Search className="w-4 h-4 text-slate-400" />
+          </button>
+
+          {/* Acciones */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Estado */}
+            <div className="relative">
               <button
-                onClick={() => setSearchOpen(true)}
-                className="w-full flex items-center px-3 py-1.5 bg-slate-800/80 border border-slate-700/50 rounded-lg text-xs text-slate-300 hover:border-blue-500/50 transition-all"
+                onClick={(e) => { e.stopPropagation(); setStatsOpen(!statsOpen) }}
+                className="p-2 rounded-lg hover:bg-slate-800/60 transition-all relative"
               >
-                <Search className="w-3.5 h-3.5 mr-2 text-slate-400" />
-                <span className="flex-1 text-left truncate">Buscar...</span>
+                <Server className="w-4 h-4 text-slate-400" />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
               </button>
+              {statsOpen && (
+                <div className="absolute top-full right-0 mt-2 w-52 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl p-4 z-50">
+                  <div className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Estado</div>
+                  <div className="space-y-2.5">
+                    {[
+                      { label: 'Servicios', status: 'Activo' },
+                      { label: 'MongoDB', status: 'Conectado' },
+                      { label: 'Docker', status: 'Operativo' },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center justify-between">
+                        <span className="text-sm text-slate-400">{item.label}</span>
+                        <span className="text-xs font-medium text-emerald-400">{item.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Búsqueda - Desktop */}
-            <div className="hidden lg:flex flex-1 max-w-lg mx-6">
-              <div className="relative w-full">
-                <button
-                  onClick={() => setSearchOpen(true)}
-                  className="w-full flex items-center px-4 py-2 bg-slate-800/80 border border-slate-700/50 rounded-lg text-sm text-slate-300 hover:border-blue-500/50 transition-all"
-                >
-                  <Search className="w-4 h-4 mr-3 text-slate-400" />
-                  <span className="flex-1 text-left">Buscar clientes, DTE...</span>
-                  <kbd className="hidden xl:inline-flex items-center px-2 py-1 text-xs font-semibold text-slate-400 bg-slate-900 border border-slate-700 rounded">
-                    Ctrl+K
-                  </kbd>
-                </button>
-              </div>
+            {/* Notificaciones */}
+            <div className="relative">
+              <button
+                onClick={(e) => { e.stopPropagation(); setNotificationsOpen(!notificationsOpen) }}
+                className="p-2 rounded-lg hover:bg-slate-800/60 transition-all relative"
+              >
+                <Bell className="w-4 h-4 text-slate-400" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {notificationsOpen && (
+                <div className="absolute top-full right-0 mt-2 w-72 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl p-4 z-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-slate-200">Notificaciones</span>
+                  </div>
+                  <div className="text-xs text-slate-500 text-center py-6">Sin notificaciones nuevas</div>
+                </div>
+              )}
             </div>
 
-            {/* Acciones */}
-            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-              {/* Estado del Sistema */}
-              <div className="relative">
-                <button
-                  onClick={() => setStatsOpen(!statsOpen)}
-                  className="relative p-2 rounded-lg bg-slate-800/80 border border-slate-700/50 hover:border-blue-500/50 transition-all"
-                >
-                  <Server className="w-5 h-5 text-blue-400" />
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
-                </button>
-                {statsOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-60 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl p-4 z-50">
-                    <div className="text-xs font-semibold text-slate-400 mb-3">Estado del Sistema</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-300">Servicios</span>
-                        <span className="text-sm font-bold text-emerald-400">Operativo</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-300">MongoDB</span>
-                        <span className="text-sm font-bold text-emerald-400">Conectado</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-300">Docker</span>
-                        <span className="text-sm font-bold text-emerald-400">Activo</span>
-                      </div>
-                    </div>
-                  </div>
+            {/* Usuario */}
+            <div className="relative">
+              <button
+                onClick={(e) => { e.stopPropagation(); setUserMenuOpen(!userMenuOpen) }}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800/60 transition-all"
+              >
+                <div className="w-7 h-7 bg-slate-700 rounded-lg flex items-center justify-center">
+                  <span className="text-xs font-semibold text-slate-300">
+                    {username?.[0]?.toUpperCase() || 'A'}
+                  </span>
+                </div>
+                <span className="hidden md:block text-sm text-slate-300">{username || 'Admin'}</span>
+                {role === 'viewer' && (
+                  <span className="hidden md:flex items-center gap-1 px-2 py-0.5 bg-slate-700/50 rounded-md text-[10px] text-slate-400">
+                    <Eye className="w-3 h-3" /> Viewer
+                  </span>
                 )}
-              </div>
-
-              {/* Notificaciones */}
-              <div className="relative">
-                <button
-                  onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className="relative p-2 rounded-lg bg-slate-800/80 border border-slate-700/50 hover:border-amber-500/50 transition-all"
-                >
-                  <Bell className="w-5 h-5 text-amber-400" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs font-bold text-white flex items-center justify-center border-2 border-slate-900">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-                {notificationsOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-80 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl p-4 z-50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-sm font-semibold text-slate-200">Notificaciones</div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => {
-                            setNotificationsOpen(false)
-                            setSettingsOpen(true)
-                          }}
-                          className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors"
-                          title="Configuración"
-                        >
-                          <Settings className="w-4 h-4 text-slate-400" />
-                        </button>
-                        <button className="text-xs text-blue-400 hover:text-blue-300">Marcar todas</button>
-                      </div>
-                    </div>
-                    <div className="text-xs text-slate-500 text-center py-4">No hay notificaciones nuevas</div>
+              </button>
+              {userMenuOpen && (
+                <div className="absolute top-full right-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden z-50">
+                  <div className="p-3 border-b border-slate-700/50">
+                    <p className="text-sm font-medium text-slate-200">{username || 'Usuario'}</p>
+                    {role === 'viewer' && (
+                      <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-slate-500">
+                        <Eye className="w-3 h-3" /> Solo lectura
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
-
-              {/* Menú de Usuario */}
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-blue-400 transition-all"
-                >
-                  <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md mr-2">
-                    <span className="text-xs font-bold text-white">
-                      {username?.[0]?.toUpperCase() || 'A'}
-                    </span>
-                  </div>
-                  <span className="hidden md:inline">{username || 'Admin'}</span>
-                </button>
-                {userMenuOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden z-50">
-                    <div className="p-3 border-b border-slate-700">
-                      <p className="text-sm font-semibold text-slate-200">{username || 'Administrador'}</p>
-                      <p className="text-xs text-slate-400">{username || 'admin'}@example.com</p>
-                    </div>
-                    <div className="py-2">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center px-4 py-2 text-sm text-red-400 hover:bg-red-500/10"
-                      >
-                        <User className="w-5 h-5 mr-2" />
-                        <span>Cerrar Sesión</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Cerrar Sesión
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -213,4 +205,3 @@ const Header = memo(function Header() {
 })
 
 export default Header
-

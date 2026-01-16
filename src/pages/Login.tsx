@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { Lock, User, ArrowRight, Shield } from 'lucide-react'
 
 export default function Login() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('viewer')
+  const [password, setPassword] = useState('1234')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const login = useAuthStore((state) => state.login)
@@ -30,59 +31,94 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-8">
-      <div className="card p-6 sm:p-8 w-full max-w-md">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center bg-theme-primary px-4 py-8 transition-colors duration-300">
+      {/* Fondo con patrón sutil */}
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800/30 via-transparent to-transparent dark:from-slate-900/50 pointer-events-none" />
+      
+      <div className="relative w-full max-w-[360px] sm:max-w-sm">
+        {/* Logo y branding */}
         <div className="text-center mb-6 sm:mb-8">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-sm" />
+          <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-5 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl bg-theme-card border border-theme-primary">
+            <img src="/static/logo.png" alt="Logo" className="w-full h-full object-contain p-2" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold gradient-text mb-2">DTE ADMIN</h1>
-          <p className="text-sm sm:text-base text-slate-400">DTE Admin Interface</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-theme-primary tracking-tight">DTE Admin</h1>
+          <p className="text-sm text-theme-muted mt-1.5">Sistema de Facturación Electrónica</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm">
-              {error}
+        {/* Card de login */}
+        <div className="card p-5 sm:p-6 shadow-2xl">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+            {error && (
+              <div className="p-3 sm:p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center flex items-center justify-center gap-2">
+                <Shield className="w-4 h-4 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-theme-secondary mb-2">Usuario</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-theme-muted" />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="input-styled pl-11 sm:pl-12 py-3 sm:py-3.5 text-sm sm:text-base"
+                  placeholder="Ingresa tu usuario"
+                  autoComplete="username"
+                  required
+                />
+              </div>
             </div>
-          )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Usuario
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm sm:text-base text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-theme-secondary mb-2">Contraseña</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-theme-muted" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-styled pl-11 sm:pl-12 py-3 sm:py-3.5 text-sm sm:text-base"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm sm:text-base text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2.5 px-4 py-3 sm:py-3.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white text-sm sm:text-base font-semibold rounded-xl transition-all shadow-lg shadow-sky-600/25 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Ingresando...</span>
+                </>
+              ) : (
+                <>
+                  <span>Iniciar Sesión</span>
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-sm sm:text-base text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-          </button>
-        </form>
+        {/* Demo hint */}
+        <div className="mt-4 p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl text-center">
+          <p className="text-xs text-sky-400">
+            <span className="font-medium">Demo:</span> Usuario <span className="font-mono bg-sky-500/20 px-1.5 py-0.5 rounded">viewer</span> / Contraseña <span className="font-mono bg-sky-500/20 px-1.5 py-0.5 rounded">1234</span>
+          </p>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-xs text-theme-muted mt-6 sm:mt-8">
+          © 2024 DTE Admin. Todos los derechos reservados.
+        </p>
       </div>
     </div>
   )
 }
-

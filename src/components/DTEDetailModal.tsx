@@ -53,6 +53,7 @@ const tipoDTENombres: Record<string, string> = {
 export default function DTEDetailModal({ codigoGeneracion, isOpen, onClose }: DTEDetailModalProps) {
   const [dte, setDte] = useState<DTEDetail | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'info' | 'xml' | 'json' | 'history'>('info')
 
   useEffect(() => {
@@ -63,13 +64,25 @@ export default function DTEDetailModal({ codigoGeneracion, isOpen, onClose }: DT
 
   const loadDTEDetails = async () => {
     setLoading(true)
+    setError(null)
+    setDte(null)
     try {
       const response = await api.get(`/dte/detalle/${codigoGeneracion}`)
+      console.log('DTE Response:', response.data)
       if (response.data.success) {
         setDte(response.data.dte)
+      } else if (response.data.dte) {
+        // Fallback: si viene dte directo sin success
+        setDte(response.data.dte)
+      } else if (response.data) {
+        // Fallback: si la respuesta es el DTE directo
+        setDte(response.data)
+      } else {
+        setError('No se encontró el DTE')
       }
-    } catch (error) {
-      console.error('Error loading DTE details:', error)
+    } catch (err: any) {
+      console.error('Error loading DTE details:', err)
+      setError(err.response?.data?.detail || err.message || 'Error al cargar el DTE')
     } finally {
       setLoading(false)
     }
@@ -241,12 +254,19 @@ export default function DTEDetailModal({ codigoGeneracion, isOpen, onClose }: DT
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Overlay */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div 
+        className="fixed inset-0 bg-black/70" 
+        onClick={onClose}
+        style={{ zIndex: 100 }}
+      />
 
       {/* Modal */}
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-slate-800 rounded-xl border border-slate-700 shadow-2xl flex flex-col">
+      <div 
+        className="relative w-full sm:max-w-4xl max-h-[95vh] sm:max-h-[90vh] bg-slate-800 rounded-t-2xl sm:rounded-xl border border-slate-700 shadow-2xl flex flex-col"
+        style={{ zIndex: 101 }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-700">
           <div className="flex items-center space-x-3">
@@ -459,70 +479,112 @@ export default function DTEDetailModal({ codigoGeneracion, isOpen, onClose }: DT
                       </div>
                     )}
 
-                    {/* Errores - Mostrar siempre si el estado es rechazado o si hay errores */}
-                    {(dte?.estado === 'rechazado' || (dte?.errores && dte.errores.length > 0) || dte?.ultimo_error || dte?.respuesta_hacienda) && (() => {
-                      const erroresDetallados = obtenerErroresDetallados()
+                    {/* Respuesta de Hacienda - Mostrar según el estado */}
+                    {(() => {
+                      const esAceptado = dte?.estado === 'aceptado'
+                      const esRechazado = dte?.estado === 'rechazado'
+                      const tieneRespuesta = dte?.respuesta_hacienda
+                      const tieneErrores = (dte?.errores && dte.errores.length > 0) || dte?.ultimo_error
                       
-                      // Si no hay errores pero el estado es rechazado y hay respuesta_hacienda, intentar extraer
-                      if (erroresDetallados.length === 0 && dte?.estado === 'rechazado' && dte?.respuesta_hacienda) {
-                        const mensajeExtraido = extraerMensajeDetalladoHacienda(dte.respuesta_hacienda)
-                        if (mensajeExtraido) {
-                          erroresDetallados.push({ tipo: 'detallado', mensaje: mensajeExtraido })
-                        }
-                      }
-                      
-                      // Si aún no hay errores pero el estado es rechazado, mostrar mensaje genérico
-                      if (erroresDetallados.length === 0 && dte?.estado === 'rechazado') {
-                        erroresDetallados.push({ tipo: 'generico', mensaje: 'DTE rechazado por Hacienda' })
-                      }
-                      
-                      if (erroresDetallados.length > 0) {
+                      // Si fue ACEPTADO y hay respuesta de Hacienda, mostrar en verde
+                      if (esAceptado && tieneRespuesta) {
+                        const mensajeHacienda = extraerMensajeDetalladoHacienda(dte.respuesta_hacienda)
                         return (
-                          <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/30">
-                            <h3 className="text-sm font-semibold text-red-400 mb-3 flex items-center">
-                              <XCircle className="w-4 h-4 mr-2" />
-                              Errores de Hacienda
+                          <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
+                            <h3 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Respuesta de Hacienda
                             </h3>
-                            <div className="space-y-3">
-                              {erroresDetallados.map((errorItem, idx) => (
-                                <div
-                                  key={idx}
-                                  className={`p-3 rounded-lg border ${
-                                    errorItem.tipo === 'detallado'
-                                      ? 'bg-red-600/20 border-red-500/50'
-                                      : 'bg-red-500/10 border-red-500/30'
-                                  }`}
-                                >
-                                  {errorItem.tipo === 'detallado' && (
-                                    <div className="flex items-center mb-1">
-                                      <span className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">
-                                        Mensaje Detallado de Hacienda:
-                                      </span>
-                                    </div>
-                                  )}
-                                  <p className={`text-sm ${
-                                    errorItem.tipo === 'detallado'
-                                      ? 'text-red-200 font-medium'
-                                      : 'text-red-300'
-                                  } break-words`}>
-                                    {errorItem.mensaje}
-                                  </p>
+                            {mensajeHacienda && (
+                              <div className="p-3 rounded-lg border bg-emerald-600/20 border-emerald-500/50 mb-3">
+                                <div className="flex items-center mb-1">
+                                  <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">
+                                    Mensaje de Hacienda:
+                                  </span>
                                 </div>
-                              ))}
-                            </div>
-                            {dte?.respuesta_hacienda && (
-                              <details className="mt-3">
-                                <summary className="text-xs text-red-400 cursor-pointer hover:text-red-300">
-                                  Ver respuesta completa de Hacienda
-                                </summary>
-                                <pre className="mt-2 p-2 bg-slate-900/50 rounded text-[10px] text-slate-300 overflow-x-auto max-h-40 overflow-y-auto">
-                                  {JSON.stringify(dte.respuesta_hacienda, null, 2)}
-                                </pre>
-                              </details>
+                                <p className="text-sm text-emerald-200 font-medium break-words">
+                                  {mensajeHacienda}
+                                </p>
+                              </div>
                             )}
+                            <details className="mt-2">
+                              <summary className="text-xs text-emerald-400 cursor-pointer hover:text-emerald-300">
+                                ▶ Ver respuesta completa de Hacienda
+                              </summary>
+                              <pre className="mt-2 p-2 bg-slate-900/50 rounded text-[10px] text-slate-300 overflow-x-auto max-h-40 overflow-y-auto">
+                                {JSON.stringify(dte.respuesta_hacienda, null, 2)}
+                              </pre>
+                            </details>
                           </div>
                         )
                       }
+                      
+                      // Si fue RECHAZADO o hay errores, mostrar en rojo
+                      if (esRechazado || tieneErrores) {
+                        const erroresDetallados = obtenerErroresDetallados()
+                        
+                        // Si no hay errores pero el estado es rechazado y hay respuesta_hacienda, intentar extraer
+                        if (erroresDetallados.length === 0 && esRechazado && tieneRespuesta) {
+                          const mensajeExtraido = extraerMensajeDetalladoHacienda(dte.respuesta_hacienda)
+                          if (mensajeExtraido) {
+                            erroresDetallados.push({ tipo: 'detallado', mensaje: mensajeExtraido })
+                          }
+                        }
+                        
+                        // Si aún no hay errores pero el estado es rechazado, mostrar mensaje genérico
+                        if (erroresDetallados.length === 0 && esRechazado) {
+                          erroresDetallados.push({ tipo: 'generico', mensaje: 'DTE rechazado por Hacienda' })
+                        }
+                        
+                        if (erroresDetallados.length > 0) {
+                          return (
+                            <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/30">
+                              <h3 className="text-sm font-semibold text-red-400 mb-3 flex items-center">
+                                <XCircle className="w-4 h-4 mr-2" />
+                                Errores de Hacienda
+                              </h3>
+                              <div className="space-y-3">
+                                {erroresDetallados.map((errorItem, idx) => (
+                                  <div
+                                    key={idx}
+                                    className={`p-3 rounded-lg border ${
+                                      errorItem.tipo === 'detallado'
+                                        ? 'bg-red-600/20 border-red-500/50'
+                                        : 'bg-red-500/10 border-red-500/30'
+                                    }`}
+                                  >
+                                    {errorItem.tipo === 'detallado' && (
+                                      <div className="flex items-center mb-1">
+                                        <span className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">
+                                          Mensaje Detallado de Hacienda:
+                                        </span>
+                                      </div>
+                                    )}
+                                    <p className={`text-sm ${
+                                      errorItem.tipo === 'detallado'
+                                        ? 'text-red-200 font-medium'
+                                        : 'text-red-300'
+                                    } break-words`}>
+                                      {errorItem.mensaje}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                              {tieneRespuesta && (
+                                <details className="mt-3">
+                                  <summary className="text-xs text-red-400 cursor-pointer hover:text-red-300">
+                                    ▶ Ver respuesta completa de Hacienda
+                                  </summary>
+                                  <pre className="mt-2 p-2 bg-slate-900/50 rounded text-[10px] text-slate-300 overflow-x-auto max-h-40 overflow-y-auto">
+                                    {JSON.stringify(dte.respuesta_hacienda, null, 2)}
+                                  </pre>
+                                </details>
+                              )}
+                            </div>
+                          )
+                        }
+                      }
+                      
                       return null
                     })()}
                   </div>
@@ -652,6 +714,18 @@ export default function DTEDetailModal({ codigoGeneracion, isOpen, onClose }: DT
                 )}
               </div>
             </>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <XCircle className="w-12 h-12 text-red-400 mb-4" />
+              <p className="text-red-400 font-medium mb-2">Error al cargar el DTE</p>
+              <p className="text-slate-500 text-sm text-center px-4">{error}</p>
+              <button
+                onClick={loadDTEDetails}
+                className="mt-4 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-slate-300 transition-colors"
+              >
+                Reintentar
+              </button>
+            </div>
           ) : (
             <div className="flex items-center justify-center py-12">
               <p className="text-slate-400">No se pudo cargar la información del DTE</p>

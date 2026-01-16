@@ -5,15 +5,18 @@ interface AuthState {
   isAuthenticated: boolean
   username: string | null
   email: string | null
+  role: 'admin' | 'viewer' | null
   login: (username: string, password: string) => Promise<boolean>
   logout: () => void
   checkAuth: () => Promise<void>
+  canWrite: () => boolean
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   username: null,
   email: null,
+  role: null,
   
   login: async (username: string, password: string) => {
     try {
@@ -28,6 +31,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: true,
           username: response.data.username || username,
           email: response.data.email || null,
+          role: response.data.role || 'admin',
         })
         
         // Esperar un momento para que la cookie se establezca antes de verificar
@@ -62,6 +66,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: false,
         username: null,
         email: null,
+        role: null,
       })
     }
   },
@@ -74,12 +79,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: true,
           username: response.data.username,
           email: response.data.email || null,
+          role: response.data.role || 'admin',
         })
       } else {
         set({
           isAuthenticated: false,
           username: null,
           email: null,
+          role: null,
         })
       }
     } catch (error: any) {
@@ -89,12 +96,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: false,
           username: null,
           email: null,
+          role: null,
         })
       } else {
         // Otro error, mantener el estado actual
         console.error('Error checking auth:', error)
       }
     }
+  },
+  
+  canWrite: () => {
+    const { role } = get()
+    return role === 'admin'
   },
 }))
 

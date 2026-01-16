@@ -2,8 +2,16 @@ import { useEffect, useState } from 'react'
 import { BarChart3, RefreshCw } from 'lucide-react'
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, XAxis, YAxis } from 'recharts'
 import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
+import RestrictedAccess from '../components/RestrictedAccess'
 
 export default function ApiAnalytics() {
+  const { role } = useAuthStore()
+  
+  // Bloquear acceso a viewers
+  if (role === 'viewer') {
+    return <RestrictedAccess title="API Analytics - Acceso Bloqueado" message="Los analytics de API contienen métricas técnicas sensibles. Solo los administradores pueden acceder a esta sección." />
+  }
   const [analytics, setAnalytics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [horas, setHoras] = useState<number>(24)
